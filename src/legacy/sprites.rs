@@ -52,7 +52,7 @@ pub fn load() -> Vec<Image> {
             Extent3d { width: w, height: h, depth_or_array_layers: 1 },
             TextureDimension::D2,
             data,
-            TextureFormat::Bgra8Unorm
+            TextureFormat::Rgba8UnormSrgb // Rgba8Unorm doesn't work with tilemap
         ));
         n += 1;
     }
