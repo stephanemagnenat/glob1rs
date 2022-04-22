@@ -41,29 +41,29 @@ fn keyboard_input(
     windows: ResMut<Windows>
 ) {
     let mut changed = false;
-    if keys.just_pressed(KeyCode::Right) {
-        if state.current + 1 < state.images.len() {
-            state.current += 1;
-            changed = true;
-        }
+    if keys.just_pressed(KeyCode::Right) &&
+        state.current + 1 < state.images.len()
+    {
+        state.current += 1;
+        changed = true;
     }
-    if keys.just_pressed(KeyCode::PageDown) {
-        if state.current + 10 < state.images.len() {
-            state.current += 10;
-            changed = true;
-        }
+    if keys.just_pressed(KeyCode::PageDown) &&
+        state.current + 10 < state.images.len()
+    {
+        state.current += 10;
+        changed = true;
     }
-    if keys.just_released(KeyCode::Left) {
-        if state.current >= 1 {
-            state.current -= 1;
-            changed = true;
-        }
+    if keys.just_released(KeyCode::Left) &&
+        state.current >= 1
+    {
+        state.current -= 1;
+        changed = true;
     }
-    if keys.just_released(KeyCode::PageUp) {
-        if state.current >= 10 {
-            state.current -= 10;
-            changed = true;
-        }
+    if keys.just_released(KeyCode::PageUp) &&
+        state.current >= 10
+    {
+        state.current -= 10;
+        changed = true;
     }
     if changed {
         update_title(&  state, windows);

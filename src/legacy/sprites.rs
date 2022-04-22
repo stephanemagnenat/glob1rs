@@ -28,7 +28,7 @@ pub fn load() -> Vec<Image> {
         let pixel_count = w as usize * h as usize;
         let mut data = Vec::with_capacity(pixel_count * 4);
         // terrain doesn't have transparency
-        let has_transparency = n < 192 || n > 355;
+        let has_transparency = !(192..=355).contains(&n);
         for _y in 0..h {
             for _x in 0..w {
                 let entry_id = bytes[i] as usize;
