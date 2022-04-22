@@ -9,6 +9,9 @@ license = "GPL-3.0-only"
 
 [dependencies]
 lazy_static = "1.4"
+rand = "0.8"
+log = "0.4"
+env_logger = "0.9"
 bevy = "0.7"
 bevy_simple_tilemap = "0.8"
 
