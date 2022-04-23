@@ -10,8 +10,7 @@ fn setup(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    // mut state: ResMut<ViewerState>,
-    // windows: ResMut<Windows>,
+    mut windows: ResMut<Windows>,
     map_file_name: Res<MapFileName>
 ) {
     // Load terrain images into a texture atlas
@@ -70,6 +69,10 @@ fn setup(
     camera.transform.translation = Vec3::new(512.0 * 32.0, -512.0 * 32.0, 0.0);
     commands.spawn_bundle(camera);
     commands.spawn_bundle(terrain_bundle);
+
+    // Setup window title
+    let window = windows.primary_mut();
+    window.set_title(format!("{map_file_name} – Glob1 map viewer"));
 }
 
 // Inspired by: https://github.com/forbjok/bevy_simple_tilemap/blob/master/examples/simple.rs
