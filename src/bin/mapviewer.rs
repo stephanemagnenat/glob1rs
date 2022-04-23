@@ -120,8 +120,8 @@ fn main() {
 	let file_name = std::env::args().nth(1).expect("Missing map filename");
 
 	App::new()
-		/*// Disable MSAA, as it produces weird rendering artifacts
-        .insert_resource(Msaa { samples: 1 })*/
+		// Disable MSAA, as it produces weird rendering artifacts
+        .insert_resource(Msaa { samples: 1 })
 		.add_plugins(DefaultPlugins)
 		.add_plugin(SimpleTileMapPlugin)
         .insert_resource(MapFileName(file_name))
