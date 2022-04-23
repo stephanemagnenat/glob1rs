@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use bevy::{prelude::*, DefaultPlugins, window::Windows, sprite::{TextureAtlasBuilder, TextureAtlas}, math::IVec3, render::camera::{ActiveCamera, Camera2d}};
+use bevy::{prelude::*, DefaultPlugins, window::Windows, sprite::{TextureAtlasBuilder, TextureAtlas}, math::IVec3, render::camera::{ActiveCamera, Camera2d}, input::mouse::{MouseWheel, MouseMotion}};
 use bevy_simple_tilemap::prelude::*;
 use glob1rs::legacy::{map, sprites};
 
@@ -78,6 +78,9 @@ fn input_system(
     mut camera_transform_query: Query<(&mut Transform,), With<Camera2d>>,
     // mut tilemap_visible_query: Query<&mut Visibility, With<TileMap>>,
     keyboard_input: Res<Input<KeyCode>>,
+	mut scroll_evr: EventReader<MouseWheel>,
+	mut motion_evr: EventReader<MouseMotion>,
+	buttons: Res<Input<MouseButton>>,
     time: Res<Time>,
 ) {
     if let Some(active_camera_entity) = active_camera.get() {
@@ -107,11 +110,22 @@ fn input_system(
                 tf.translation.y += move_speed * time.delta_seconds();
             }
 
-            /*if keyboard_input.just_pressed(KeyCode::V) {
-                // Toggle visibility
-                let mut visible = tilemap_visible_query.iter_mut().next().unwrap();
-                visible.is_visible = !visible.is_visible;
-            }*/
+            use bevy::input::mouse::MouseScrollUnit;
+			for ev in scroll_evr.iter() {
+				let factor = match ev.unit {
+					MouseScrollUnit::Line => ev.y * 12.0,
+					MouseScrollUnit::Pixel => ev.y
+				};
+				let amount = -zoom_speed * factor * 0.002;
+				tf.scale.x = (tf.scale.x + amount).max(0.1);
+				tf.scale.y = (tf.scale.y + amount).max(0.1);
+			}
+			if buttons.pressed(MouseButton::Middle) {
+				for ev in motion_evr.iter() {
+					tf.translation.x -= ev.delta.x * tf.scale.x;
+					tf.translation.y += ev.delta.y * tf.scale.y;
+				}
+			}
         }
     }
 }
@@ -126,6 +140,6 @@ fn main() {
 		.add_plugin(SimpleTileMapPlugin)
         .insert_resource(MapFileName(file_name))
 		.add_system(input_system)
-        .add_startup_system(setup)
+		.add_startup_system(setup)
         .run();
 }
