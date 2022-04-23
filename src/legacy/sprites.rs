@@ -1,4 +1,5 @@
 use bevy::render::{texture::Image, render_resource::{TextureDimension, TextureFormat, Extent3d}};
+use log::debug;
 use super::palette::PALETTE;
 
 pub fn load() -> Vec<Image> {
@@ -24,7 +25,7 @@ pub fn load() -> Vec<Image> {
         let x_extra = get_usize(&mut i);
         let h = get_usize(&mut i);
         let w = get_usize(&mut i);
-        println!("Loading sprite {n}: is {w} x {h} ({x_extra}, {y_extra})");
+        debug!("Loading sprite {n}: is {w} x {h} ({x_extra}, {y_extra})");
         let pixel_count = w as usize * h as usize;
         let mut data = Vec::with_capacity(pixel_count * 4);
         // terrain doesn't have transparency
