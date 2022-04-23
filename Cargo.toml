@@ -22,3 +22,7 @@ opt-level = 1
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]
 opt-level = 3
+
+# When in release, do link-time optimization
+[profile.release]
+lto = "thin"
