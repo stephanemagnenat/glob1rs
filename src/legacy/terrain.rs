@@ -2,12 +2,45 @@ use std::io::{Read, Error, ErrorKind};
 use rand::{Rng, prelude::ThreadRng};
 use log::{trace, debug};
 
-pub type Map = [[u8; 1024]; 1024];
+use super::grid::{Grid2D, Coord};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TerrainType {
+    Grass,
+    Sand,
+    Water,
+    Resource
+}
+
+pub struct TerrainMap(pub Box<[[u8; 1024]; 1024]>);
+impl TerrainMap {
+    pub fn passable(&self, position: Coord) -> bool {
+        self.get(position) != TerrainType::Resource
+    }
+}
+impl Grid2D<TerrainType> for TerrainMap {
+    const W: usize = 1024;
+    const H: usize = 1024;
+    
+    fn set(&mut self, position: Coord, value: TerrainType) {
+        todo!()
+    }
+
+    fn get(&self, position: Coord) -> TerrainType {
+        match self.0.get(position) {
+            0..=7 => TerrainType::Water,
+            8..=103 => TerrainType::Sand,
+            104..=107 => TerrainType::Grass,
+            108..=123 => TerrainType::Sand,
+            124.. => TerrainType::Resource
+        }
+    }
+}
 
 /// When a tile is compressed, only its type (e.g. pure water) is stored.
 /// This struct allows to sample actual tiles (e.g. pure water third sprite).
-struct TileRange(u8, u8);
-impl TileRange {
+struct TerrainTileRange(u8, u8);
+impl TerrainTileRange {
     fn decode(encoded: u8) -> Self {
         if encoded < 31 {
             Self(encoded * 4, 4)
@@ -20,7 +53,8 @@ impl TileRange {
     }
 }
 
-pub fn load(input: impl Read) -> Result<Map, Error> {
+
+pub fn load(input: impl Read) -> Result<TerrainMap, Error> {
     let mut bytes = input.bytes();
     debug!("Loading map");
     let mut get_u8 = ||
@@ -43,7 +77,7 @@ pub fn load(input: impl Read) -> Result<Map, Error> {
             if let Some((encoded, count)) = &mut multi_tiles {
                 trace!("  part of multi-tile encoding");
                 // fill one tile
-                let tile_range = TileRange::decode(*encoded);
+                let tile_range = TerrainTileRange::decode(*encoded);
                 for dx in 0..16 {
                     for dy in 0..16 {
                         map[base_x + dx][base_y + dy] = tile_range.sample_tile(&mut rng);
@@ -71,7 +105,7 @@ pub fn load(input: impl Read) -> Result<Map, Error> {
                 },
                 // constant tile type
                 2 => {
-                    let tile_range = TileRange::decode(get_u8()?);
+                    let tile_range = TerrainTileRange::decode(get_u8()?);
                     for dx in 0..16 {
                         for dy in 0..16 {
                             map[base_x + dx][base_y + dy] = tile_range.sample_tile(&mut rng);
@@ -82,7 +116,7 @@ pub fn load(input: impl Read) -> Result<Map, Error> {
                 3 => {
                     let mut filled = 0;
                     while filled < 256 {
-                        let tile_range = TileRange::decode(get_u8()?);
+                        let tile_range = TerrainTileRange::decode(get_u8()?);
                         let count = get_u8()? as usize;
                         for i in filled..filled + count {
                             let dx = i / 16;
@@ -96,7 +130,7 @@ pub fn load(input: impl Read) -> Result<Map, Error> {
                 4 => {
                     let mut filled = 0;
                     while filled < 256 {
-                        let tile_range = TileRange::decode(get_u8()?);
+                        let tile_range = TerrainTileRange::decode(get_u8()?);
                         let count = get_u8()? as usize;
                         for i in filled..filled + count {
                             let dx = i % 16;
@@ -112,7 +146,7 @@ pub fn load(input: impl Read) -> Result<Map, Error> {
                     let count = get_u8()? as i32;
                     trace!("  decompressing {count} tiles with type {encoded}");
                     // fill one tile
-                    let tile_range = TileRange::decode(encoded);
+                    let tile_range = TerrainTileRange::decode(encoded);
                     for dx in 0..16 {
                         for dy in 0..16 {
                             map[base_x + dx][base_y + dy] = tile_range.sample_tile(&mut rng);
@@ -128,5 +162,5 @@ pub fn load(input: impl Read) -> Result<Map, Error> {
         }
     }
     // TODO: load queen and window position
-    Ok(map)
+    Ok(TerrainMap(Box::new(map)))
 }

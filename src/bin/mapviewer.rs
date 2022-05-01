@@ -1,8 +1,8 @@
 use std::fs::File;
 
-use bevy::{prelude::*, DefaultPlugins, window::Windows, sprite::{TextureAtlasBuilder, TextureAtlas}, math::IVec3, render::camera::{ActiveCamera, Camera2d}, input::mouse::{MouseWheel, MouseMotion}};
+use bevy::{DefaultPlugins, window::Windows, sprite::{TextureAtlasBuilder, TextureAtlas, TextureAtlasSprite, SpriteSheetBundle}, math::{IVec3, Vec3}, render::camera::{ActiveCamera, Camera2d}, input::{mouse::{MouseWheel, MouseMotion}, Input}, core::{FixedTimestep, Time}, ecs::schedule::SystemStage, prelude::{Commands, ResMut, Assets, Image, Res, Transform, Query, KeyCode, With, EventReader, MouseButton, App, Msaa, CoreStage, OrthographicCameraBundle}};
 use bevy_simple_tilemap::prelude::*;
-use glob1rs::legacy::{map, sprites};
+use glob1rs::legacy::{terrain, sprites, unit::{move_units, UnitPosition, MoveOrder, UnitSprites, UnitBundle}, direction::Direction, grid::Coord, over_map::OverMap};
 
 struct MapFileName(String);
 
@@ -13,41 +13,59 @@ fn setup(
     mut windows: ResMut<Windows>,
     map_file_name: Res<MapFileName>
 ) {
-    // Load terrain images into a texture atlas
+    // Load all images and provide support to create atlases
     let glob1images = sprites::load();
-    let mut terrain_atlas_builder = TextureAtlasBuilder::default();
-    let terrain_handles = glob1images
-        .into_iter()
-        .skip(192)
-        .take(164)
-        .map(|image| {
-            let handle = images.add(image);
-            let image = images.get(handle.clone()).unwrap();
-            terrain_atlas_builder.add_texture(handle.clone(), image);
-            handle
-        })
-        .collect::<Vec<_>>();
-    let terrain_atlas = terrain_atlas_builder
-        .finish(&mut images)
-        .unwrap();
+    let mut build_atlas = |skip: usize, take: usize| {
+        let mut atlas_builder = TextureAtlasBuilder::default();
+        let handles = glob1images
+            .iter()
+            .skip(skip)
+            .take(take)
+            .map(|image| {
+                let handle = images.add(image.clone());
+                let image = images.get(handle.clone()).unwrap();
+                atlas_builder.add_texture(handle.clone(), image);
+                handle
+            })
+            // We have to collect because we need to finish the atlas before the next pass
+            .collect::<Vec<_>>();
+        let atlas = atlas_builder
+            .finish(&mut images)
+            .unwrap();
+        let handles_and_index = handles
+            .into_iter()
+            .map(|handle| {
+                let index = atlas
+                    .get_texture_index(&handle)
+                    .unwrap();
+                (handle, index)
+            })
+            .collect::<Vec<_>>();
+        let atlas_handle = texture_atlases.add(atlas);
+        (atlas_handle, handles_and_index)
+    };
+
+    // Build unit atlas and handles
+    let (unit_atlas_handle, unit_sprites) = build_atlas(0, 192);
+    commands.insert_resource(UnitSprites {
+        texture_atlas: unit_atlas_handle.clone(),
+        sprites: unit_sprites
+    });
 
     // Create a new tilemap for terrain
+    let (terrain_atlas_handle, terrain_handles) = build_atlas(192, 164);
     let map_file_name = &map_file_name.0;
     let file = File::open(map_file_name).expect("Cannot open map filename");
-    let map = map::load(file).expect("Error reading map");
-    let tiles: Vec<_> = map
-        .into_iter()
+    let map = terrain::load(file).expect("Error reading map");
+    let tiles: Vec<_> = map.0
+        .iter()
         .enumerate()
         .flat_map(|(x, col)| {
-            let terrain_atlas = &terrain_atlas;
             let terrain_handles = &terrain_handles;
-            col.into_iter()
+            col.iter()
                 .enumerate()
-                .map(move |(y, terrain)| {
-                    let sprite_index = terrain_atlas
-                        .get_texture_index(&terrain_handles[terrain as usize])
-                        .unwrap() as u32
-                    ;
+                .map(move |(y, &terrain)| {
+                    let sprite_index = terrain_handles[terrain as usize].1 as u32;
                     (
                         IVec3::new(x as i32, -(y as i32), 0),
                         Some(Tile { sprite_index, ..Default::default() })
@@ -57,18 +75,35 @@ fn setup(
         .collect();
     let mut tilemap = TileMap::default();
     tilemap.set_tiles(tiles);
+    commands.insert_resource(map);
 
     // Show terrain
-    let terrain_atlas_handle = texture_atlases.add(terrain_atlas);
     let terrain_bundle = TileMapBundle {
         tilemap,
         texture_atlas: terrain_atlas_handle,
         ..Default::default()
     };
     let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform.translation = Vec3::new(512.0 * 32.0, -512.0 * 32.0, 0.0);
+    camera.transform.translation = Vec3::new(512.0 * 32.0, -512.0 * 32.0, 10.0);
     commands.spawn_bundle(camera);
     commands.spawn_bundle(terrain_bundle);
+
+    // Create one unit
+    commands.spawn().insert_bundle(UnitBundle {
+        position: UnitPosition {
+            position: Coord::new(0, 0),
+            step: 0,
+            direction: Direction::Right,
+            order: MoveOrder::Idle,
+            speed: 3,
+        },
+        sprite: SpriteSheetBundle {
+            sprite: TextureAtlasSprite::new(0),
+            texture_atlas: unit_atlas_handle,
+            transform: Transform::from_xyz(0., 0., 1.),
+            ..Default::default()
+        }
+    });
 
     // Setup window title
     let window = windows.primary_mut();
@@ -135,6 +170,7 @@ fn input_system(
 
 fn main() {
     let file_name = std::env::args().nth(1).expect("Missing map filename");
+    static GLOB1TICK: &str = "glob1tick";
 
     App::new()
         // Disable MSAA, as it produces weird rendering artifacts
@@ -142,7 +178,15 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(SimpleTileMapPlugin)
         .insert_resource(MapFileName(file_name))
+        .insert_resource(OverMap::default())
         .add_system(input_system)
         .add_startup_system(setup)
+        .add_stage_before(
+            CoreStage::Update,
+            GLOB1TICK,
+            SystemStage::single_threaded()
+                .with_run_criteria(FixedTimestep::step(0.03))
+        )
+        .add_system_to_stage(GLOB1TICK, move_units)
         .run();
 }
