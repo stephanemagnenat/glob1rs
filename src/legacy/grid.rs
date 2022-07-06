@@ -8,9 +8,9 @@ pub trait Grid2D<T: Copy> {
 
     fn is_in_bounds(position: Coord) -> bool {
         position.x >= 0 &&
-        position.x < 1024 &&
+        position.x < Self::W as i16 &&
         position.y >= 0 &&
-        position.y < 1024
+        position.y < Self::H as i16
     }
 
 	fn set(&mut self, position: Coord, value: T);
