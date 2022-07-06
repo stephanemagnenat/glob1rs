@@ -161,6 +161,28 @@ pub fn load(input: impl Read) -> Result<TerrainMap, Error> {
             }
         }
     }
-    // TODO: load queen and window position
+    let mut get_u16_be = || {
+        let b_high = get_u8();
+        b_high.and_then(
+            |b_high| get_u8().and_then(|b_low| {
+                Ok((b_high as u16) << 8 | (b_low as u16))
+            })
+        )
+    };
+    // load queens
+    println!("Queens:");
+    for i in 0..8 {
+        let x = get_u16_be()?;
+        let y = get_u16_be()?;
+        if x != u16::MAX && y != u16::MAX {
+            println!("{i}: {x}, {y}");
+        } else {
+            println!("{i}: unused");
+        }
+    }
+    let x = get_u16_be()?;
+    let y = get_u16_be()?;
+    println!("Window: {x}, {y}");
+    // TODO: do something with queen and window position
     Ok(TerrainMap(Box::new(map)))
 }
