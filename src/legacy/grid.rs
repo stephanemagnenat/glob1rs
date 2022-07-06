@@ -3,8 +3,8 @@ use cgmath::Vector2;
 pub type Coord = Vector2<i16>;
 
 pub trait Grid2D<T: Copy> {
-    const W: usize;
-    const H: usize;
+    const W: u16;
+    const H: u16;
 
     fn is_in_bounds(position: Coord) -> bool {
         position.x >= 0 &&
@@ -18,8 +18,8 @@ pub trait Grid2D<T: Copy> {
 }
 
 impl<T: Copy> Grid2D<T> for [[T; 1024]; 1024] {
-    const W: usize = 1024;
-    const H: usize = 1024;
+    const W: u16 = 1024;
+    const H: u16 = 1024;
 
     fn set(&mut self, position: Coord, value: T) {
         self[position.x as usize][position.y as usize] = value;

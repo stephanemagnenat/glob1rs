@@ -19,8 +19,8 @@ impl TerrainMap {
     }
 }
 impl Grid2D<TerrainType> for TerrainMap {
-    const W: usize = 1024;
-    const H: usize = 1024;
+    const W: u16 = 1024;
+    const H: u16 = 1024;
     
     fn set(&mut self, position: Coord, value: TerrainType) {
         todo!()

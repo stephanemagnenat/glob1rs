@@ -21,8 +21,8 @@ impl Default for OverMap {
     }
 }
 impl Grid2D<OverMapTile> for OverMap {
-	const W: usize = 1024;
-    const H: usize = 1024;
+	const W: u16 = 1024;
+    const H: u16 = 1024;
 	delegate! {
         to self.0 {
 			fn set(&mut self, position: Coord, value: OverMapTile);
