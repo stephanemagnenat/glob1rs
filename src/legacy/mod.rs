@@ -1,4 +1,6 @@
 mod palette;
+#[macro_use]
+mod array;
 pub mod grid;
 pub mod sprites;
 pub mod terrain;

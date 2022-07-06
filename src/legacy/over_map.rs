@@ -17,7 +17,7 @@ impl Default for OverMapTile {
 pub struct OverMap(pub Box<[[OverMapTile; 1024]; 1024]>);
 impl Default for OverMap {
     fn default() -> Self {
-        Self(Box::new([[OverMapTile::default(); 1024]; 1024]))
+        Self(box_array![[OverMapTile::default(); 1024]; 1024])
     }
 }
 impl Grid2D<OverMapTile> for OverMap {
