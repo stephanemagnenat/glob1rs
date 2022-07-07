@@ -5,6 +5,7 @@ pub mod direction;
 #[macro_use]
 pub mod grid;
 pub mod over_map;
+pub mod pheromone;
 pub mod sprites;
 pub mod stored_map;
 pub mod terrain;
