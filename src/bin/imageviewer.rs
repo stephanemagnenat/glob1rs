@@ -1,16 +1,13 @@
-use bevy::{prelude::*};
+use bevy::prelude::*;
 use glob1rs::legacy::sprites;
 
 #[derive(Default)]
 struct ViewerState {
     current: usize,
-    images: Vec<Handle<Image>>
+    images: Vec<Handle<Image>>,
 }
 
-fn update_title(
-    state: &ViewerState,
-    mut windows: ResMut<Windows>
-) {
+fn update_title(state: &ViewerState, mut windows: ResMut<Windows>) {
     let window = windows.primary_mut();
     window.set_title(format!("Image {} / {}", state.current, state.images.len()));
 }
@@ -19,7 +16,7 @@ fn setup(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
     mut state: ResMut<ViewerState>,
-    windows: ResMut<Windows>
+    windows: ResMut<Windows>,
 ) {
     let glob1images = sprites::load();
     state.images = glob1images
@@ -38,35 +35,27 @@ fn keyboard_input(
     keys: Res<Input<KeyCode>>,
     mut state: ResMut<ViewerState>,
     mut query: Query<&mut Handle<Image>>,
-    windows: ResMut<Windows>
+    windows: ResMut<Windows>,
 ) {
     let mut changed = false;
-    if keys.just_pressed(KeyCode::Right) &&
-        state.current + 1 < state.images.len()
-    {
+    if keys.just_pressed(KeyCode::Right) && state.current + 1 < state.images.len() {
         state.current += 1;
         changed = true;
     }
-    if keys.just_pressed(KeyCode::PageDown) &&
-        state.current + 10 < state.images.len()
-    {
+    if keys.just_pressed(KeyCode::PageDown) && state.current + 10 < state.images.len() {
         state.current += 10;
         changed = true;
     }
-    if keys.just_released(KeyCode::Left) &&
-        state.current >= 1
-    {
+    if keys.just_released(KeyCode::Left) && state.current >= 1 {
         state.current -= 1;
         changed = true;
     }
-    if keys.just_released(KeyCode::PageUp) &&
-        state.current >= 10
-    {
+    if keys.just_released(KeyCode::PageUp) && state.current >= 10 {
         state.current -= 10;
         changed = true;
     }
     if changed {
-        update_title(&  state, windows);
+        update_title(&state, windows);
         for mut handle in query.iter_mut() {
             *handle = state.images[state.current].clone();
         }

@@ -1,8 +1,29 @@
 use std::fs::File;
 
-use bevy::{DefaultPlugins, window::Windows, sprite::{TextureAtlasBuilder, TextureAtlas, TextureAtlasSprite, SpriteSheetBundle}, math::{IVec3, Vec3}, render::camera::{ActiveCamera, Camera2d}, input::{mouse::{MouseWheel, MouseMotion}, Input}, core::{FixedTimestep, Time}, ecs::schedule::SystemStage, prelude::{Commands, ResMut, Assets, Image, Res, Transform, Query, KeyCode, With, EventReader, MouseButton, App, Msaa, CoreStage, OrthographicCameraBundle}};
+use bevy::{
+    core::{FixedTimestep, Time},
+    ecs::schedule::SystemStage,
+    input::{
+        mouse::{MouseMotion, MouseWheel},
+        Input,
+    },
+    math::{IVec3, Vec3},
+    prelude::{
+        App, Assets, Commands, CoreStage, EventReader, Image, KeyCode, MouseButton, Msaa,
+        OrthographicCameraBundle, Query, Res, ResMut, Transform, With,
+    },
+    render::camera::{ActiveCamera, Camera2d},
+    sprite::{SpriteSheetBundle, TextureAtlas, TextureAtlasBuilder, TextureAtlasSprite},
+    window::Windows,
+    DefaultPlugins,
+};
 use bevy_simple_tilemap::prelude::*;
-use glob1rs::legacy::{stored_map, sprites, unit::{move_units, UnitPosition, MoveOrder, UnitSprites, UnitBundle}, direction::Direction, over_map::OverMap};
+use glob1rs::legacy::{
+    direction::Direction,
+    over_map::OverMap,
+    sprites, stored_map,
+    unit::{move_units, MoveOrder, UnitBundle, UnitPosition, UnitSprites},
+};
 
 struct MapFileName(String);
 
@@ -11,7 +32,7 @@ fn setup(
     mut images: ResMut<Assets<Image>>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut windows: ResMut<Windows>,
-    map_file_name: Res<MapFileName>
+    map_file_name: Res<MapFileName>,
 ) {
     // Load all images and provide support to create atlases
     let glob1images = sprites::load();
@@ -30,15 +51,11 @@ fn setup(
                 handle
             })
             .collect::<Vec<_>>();
-        let atlas = atlas_builder
-            .finish(&mut images)
-            .unwrap();
+        let atlas = atlas_builder.finish(&mut images).unwrap();
         let handles_and_index = handles
             .into_iter()
             .map(|handle| {
-                let index = atlas
-                    .get_texture_index(&handle)
-                    .unwrap();
+                let index = atlas.get_texture_index(&handle).unwrap();
                 (handle, index)
             })
             .collect::<Vec<_>>();
@@ -50,7 +67,7 @@ fn setup(
     let (unit_atlas_handle, unit_sprites) = build_atlas(0, 192);
     commands.insert_resource(UnitSprites {
         texture_atlas: unit_atlas_handle.clone(),
-        sprites: unit_sprites
+        sprites: unit_sprites,
     });
 
     // Create a new tilemap for terrain
@@ -58,20 +75,23 @@ fn setup(
     let map_file_name = &map_file_name.0;
     let file = File::open(map_file_name).expect("Cannot open map filename");
     let stored_map = stored_map::load(file).expect("Error reading map");
-    let tiles: Vec<_> = stored_map.terrain.0
+    let tiles: Vec<_> = stored_map
+        .terrain
+        .0
         .iter()
         .enumerate()
         .flat_map(|(x, col)| {
             let terrain_handles = &terrain_handles;
-            col.iter()
-                .enumerate()
-                .map(move |(y, &terrain)| {
-                    let sprite_index = terrain_handles[terrain as usize].1 as u32;
-                    (
-                        IVec3::new(x as i32, -(y as i32), 0),
-                        Some(Tile { sprite_index, ..Default::default() })
-                    )
-                })
+            col.iter().enumerate().map(move |(y, &terrain)| {
+                let sprite_index = terrain_handles[terrain as usize].1 as u32;
+                (
+                    IVec3::new(x as i32, -(y as i32), 0),
+                    Some(Tile {
+                        sprite_index,
+                        ..Default::default()
+                    }),
+                )
+            })
         })
         .collect();
     let mut tilemap = TileMap::default();
@@ -108,7 +128,7 @@ fn setup(
                 texture_atlas: unit_atlas_handle.clone(),
                 transform: Transform::from_xyz(0., 0., 1.),
                 ..Default::default()
-            }
+            },
         });
     }
 
@@ -159,7 +179,7 @@ fn input_system(
             for ev in scroll_evr.iter() {
                 let factor = match ev.unit {
                     MouseScrollUnit::Line => ev.y * 12.0,
-                    MouseScrollUnit::Pixel => ev.y
+                    MouseScrollUnit::Pixel => ev.y,
                 };
                 let amount = -zoom_speed * factor * 0.002;
                 tf.scale.x = (tf.scale.x + amount).max(0.1);
@@ -191,8 +211,7 @@ fn main() {
         .add_stage_before(
             CoreStage::Update,
             GLOB1TICK,
-            SystemStage::single_threaded()
-                .with_run_criteria(FixedTimestep::step(0.03))
+            SystemStage::single_threaded().with_run_criteria(FixedTimestep::step(0.03)),
         )
         .add_system_to_stage(GLOB1TICK, move_units)
         .run();

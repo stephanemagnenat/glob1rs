@@ -1,6 +1,9 @@
-use bevy::render::{texture::Image, render_resource::{TextureDimension, TextureFormat, Extent3d}};
-use log::debug;
 use super::palette::PALETTE;
+use bevy::render::{
+    render_resource::{Extent3d, TextureDimension, TextureFormat},
+    texture::Image,
+};
+use log::debug;
 
 pub fn load() -> Vec<Image> {
     let bytes = include_bytes!("../../assets/glob1-sprites.bin");
@@ -50,10 +53,14 @@ pub fn load() -> Vec<Image> {
             }
         }
         images.push(Image::new(
-            Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+            Extent3d {
+                width: w,
+                height: h,
+                depth_or_array_layers: 1,
+            },
             TextureDimension::D2,
             data,
-            TextureFormat::Rgba8UnormSrgb // Rgba8Unorm doesn't work with tilemap
+            TextureFormat::Rgba8UnormSrgb, // Rgba8Unorm doesn't work with tilemap
         ));
         n += 1;
     }

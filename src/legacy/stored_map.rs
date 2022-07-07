@@ -1,14 +1,14 @@
-use std::io::{Read, Error, ErrorKind};
-use rand::{Rng, prelude::ThreadRng};
-use log::{trace, debug};
+use log::{debug, trace};
+use rand::{prelude::ThreadRng, Rng};
+use std::io::{Error, ErrorKind, Read};
 
-use super::{terrain::TerrainMap, grid::Coord};
+use super::{grid::Coord, terrain::TerrainMap};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoredMap {
     pub terrain: TerrainMap,
     pub queen_positions: Vec<Coord>,
-    pub view_position: Coord
+    pub view_position: Coord,
 }
 
 /// When a tile is compressed, only its type (e.g. pure water) is stored.
@@ -30,14 +30,12 @@ impl TerrainTileRange {
 pub fn load(input: impl Read) -> Result<StoredMap, Error> {
     let mut bytes = input.bytes();
     debug!("Loading map");
-    let mut get_u8 = ||
+    let mut get_u8 = || {
         bytes
             .next()
             .transpose()
-            .and_then(
-                |b| b.ok_or_else(|| Error::from(ErrorKind::UnexpectedEof))
-            )
-    ;
+            .and_then(|b| b.ok_or_else(|| Error::from(ErrorKind::UnexpectedEof)))
+    };
     let mut map = box_array![[0; 1024]; 1024];
     let mut rng = rand::thread_rng();
     let mut multi_tiles: Option<(u8, i32)> = None;
@@ -75,7 +73,7 @@ pub fn load(input: impl Read) -> Result<StoredMap, Error> {
                             map[base_x + dx][base_y + dy] = get_u8()?;
                         }
                     }
-                },
+                }
                 // constant tile type
                 2 => {
                     let tile_range = TerrainTileRange::decode(get_u8()?);
@@ -84,7 +82,7 @@ pub fn load(input: impl Read) -> Result<StoredMap, Error> {
                             map[base_x + dx][base_y + dy] = tile_range.sample_tile(&mut rng);
                         }
                     }
-                },
+                }
                 // linear compression type A
                 3 => {
                     let mut filled = 0;
@@ -98,7 +96,7 @@ pub fn load(input: impl Read) -> Result<StoredMap, Error> {
                         }
                         filled += count;
                     }
-                },
+                }
                 // linear compression type B
                 4 => {
                     let mut filled = 0;
@@ -112,7 +110,7 @@ pub fn load(input: impl Read) -> Result<StoredMap, Error> {
                         }
                         filled += count;
                     }
-                },
+                }
                 // multi-tile constant tile type
                 5 => {
                     let encoded = get_u8()?;
@@ -129,31 +127,27 @@ pub fn load(input: impl Read) -> Result<StoredMap, Error> {
                     if count > 1 {
                         multi_tiles = Some((encoded, count - 1));
                     }
-                },
-                _ => return Err(Error::from(ErrorKind::InvalidData))
+                }
+                _ => return Err(Error::from(ErrorKind::InvalidData)),
             }
         }
     }
     // helpers for 16 bit types
     let mut get_u16_be = || {
         let b_high = get_u8();
-        b_high.and_then(
-            |b_high| get_u8().map(|b_low| {
-                (b_high as u16) << 8 | (b_low as u16)
-            })
-        )
+        b_high.and_then(|b_high| get_u8().map(|b_low| (b_high as u16) << 8 | (b_low as u16)))
     };
     let mut get_coord = || {
         let x = get_u16_be();
-        x.and_then(
-            |x| get_u16_be().map(|y|
+        x.and_then(|x| {
+            get_u16_be().map(|y| {
                 if x != u16::MAX && y != u16::MAX {
                     Some(Coord::new(x as i16, y as i16))
                 } else {
                     None
                 }
-            )
-        )
+            })
+        })
     };
     // load queen positions
     let mut queen_positions = Vec::new();

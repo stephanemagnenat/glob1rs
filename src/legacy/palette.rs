@@ -2,7 +2,7 @@
 pub struct PaletteEntry {
     pub r: u8,
     pub g: u8,
-    pub b: u8
+    pub b: u8,
 }
 
 pub type Palette = [PaletteEntry; 256];

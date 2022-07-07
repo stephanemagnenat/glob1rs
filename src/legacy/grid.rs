@@ -7,14 +7,14 @@ pub trait Grid2D<T: Copy> {
     const H: u16;
 
     fn is_in_bounds(position: Coord) -> bool {
-        position.x >= 0 &&
-        position.x < Self::W as i16 &&
-        position.y >= 0 &&
-        position.y < Self::H as i16
+        position.x >= 0
+            && position.x < Self::W as i16
+            && position.y >= 0
+            && position.y < Self::H as i16
     }
 
-	fn set(&mut self, position: Coord, value: T);
-	fn get(&self, position: Coord) -> T;
+    fn set(&mut self, position: Coord, value: T);
+    fn get(&self, position: Coord) -> T;
 }
 
 impl<T: Copy> Grid2D<T> for [[T; 1024]; 1024] {

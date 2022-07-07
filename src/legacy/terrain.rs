@@ -1,11 +1,11 @@
-use super::grid::{Grid2D, Coord};
+use super::grid::{Coord, Grid2D};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TerrainType {
     Grass,
     Sand,
     Water,
-    Resource
+    Resource,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -18,7 +18,7 @@ impl TerrainMap {
 impl Grid2D<TerrainType> for TerrainMap {
     const W: u16 = 1024;
     const H: u16 = 1024;
-    
+
     fn set(&mut self, _position: Coord, _value: TerrainType) {
         todo!()
     }
@@ -29,7 +29,7 @@ impl Grid2D<TerrainType> for TerrainMap {
             8..=103 => TerrainType::Sand,
             104..=107 => TerrainType::Grass,
             108..=123 => TerrainType::Sand,
-            124.. => TerrainType::Resource
+            124.. => TerrainType::Resource,
         }
     }
 }
