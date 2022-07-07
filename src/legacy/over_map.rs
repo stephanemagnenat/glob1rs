@@ -3,15 +3,11 @@ use delegate::delegate;
 
 use super::grid::{Grid2D, Coord};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum OverMapTile {
+    #[default]
 	Empty,
 	Unit(Entity)
-}
-impl Default for OverMapTile {
-    fn default() -> Self {
-        Self::Empty
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
