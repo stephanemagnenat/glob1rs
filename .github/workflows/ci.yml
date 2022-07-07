@@ -9,6 +9,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
+        with:
+          lfs: 'true'
 
       - name: Install alsa and udev
         run: sudo apt update; sudo apt install --no-install-recommends libasound2-dev libudev-dev
@@ -32,6 +34,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
+        with:
+          lfs: 'true'
 
       - name: Install alsa and udev
         run: sudo apt update; sudo apt install --no-install-recommends libasound2-dev libudev-dev
@@ -56,6 +60,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
+        with:
+          lfs: 'true'
 
       - name: Install alsa and udev
         run: sudo apt update; sudo apt install --no-install-recommends libasound2-dev libudev-dev
