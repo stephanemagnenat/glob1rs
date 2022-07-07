@@ -17,13 +17,4 @@ impl Default for OverMap {
         Self(box_array![[OverMapTile::default(); 1024]; 1024])
     }
 }
-impl Grid2D<OverMapTile> for OverMap {
-    const W: u16 = 1024;
-    const H: u16 = 1024;
-    delegate! {
-        to self.0 {
-            fn set(&mut self, position: Coord, value: OverMapTile);
-            fn get(&self, position: Coord) -> OverMapTile;
-        }
-    }
-}
+impl_grid2d_delegate!(OverMapTile, OverMap);

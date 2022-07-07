@@ -17,9 +17,9 @@ pub trait Grid2D<T: Copy> {
     fn get(&self, position: Coord) -> T;
 }
 
-impl<T: Copy> Grid2D<T> for [[T; 1024]; 1024] {
-    const W: u16 = 1024;
-    const H: u16 = 1024;
+impl<T: Copy, const W: usize, const H: usize> Grid2D<T> for [[T; W]; H] {
+    const W: u16 = W as u16;
+    const H: u16 = H as u16;
 
     fn set(&mut self, position: Coord, value: T) {
         self[position.x as usize][position.y as usize] = value;
@@ -28,4 +28,19 @@ impl<T: Copy> Grid2D<T> for [[T; 1024]; 1024] {
     fn get(&self, position: Coord) -> T {
         self[position.x as usize][position.y as usize]
     }
+}
+
+macro_rules! impl_grid2d_delegate {
+    ($tile_ty: ty, $map_ty: ty) => {
+        impl Grid2D<$tile_ty> for $map_ty {
+            const W: u16 = 1024;
+            const H: u16 = 1024;
+            delegate! {
+                to self.0 {
+                    fn set(&mut self, position: Coord, value: $tile_ty);
+                    fn get(&self, position: Coord) -> $tile_ty;
+                }
+            }
+        }
+    };
 }

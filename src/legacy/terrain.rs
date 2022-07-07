@@ -15,6 +15,7 @@ impl TerrainMap {
         self.get(position) != TerrainType::Resource
     }
 }
+
 impl Grid2D<TerrainType> for TerrainMap {
     const W: u16 = 1024;
     const H: u16 = 1024;
