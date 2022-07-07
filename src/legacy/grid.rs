@@ -13,6 +13,15 @@ pub trait Grid2D<T: Copy> {
             && position.y < Self::H as i16
     }
 
+    fn for_each(&mut self, f: impl Fn(T, Coord) -> T) {
+        for x in 0..Self::W as i16 {
+            for y in 0..Self::H as i16 {
+                let position = Coord::new(x, y);
+                self.set(position, f(self.get(position), position));
+            }
+        }
+    }
+
     fn set(&mut self, position: Coord, value: T);
     fn get(&self, position: Coord) -> T;
 }
