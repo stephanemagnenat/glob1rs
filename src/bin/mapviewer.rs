@@ -2,7 +2,7 @@ use std::fs::File;
 
 use bevy::{DefaultPlugins, window::Windows, sprite::{TextureAtlasBuilder, TextureAtlas, TextureAtlasSprite, SpriteSheetBundle}, math::{IVec3, Vec3}, render::camera::{ActiveCamera, Camera2d}, input::{mouse::{MouseWheel, MouseMotion}, Input}, core::{FixedTimestep, Time}, ecs::schedule::SystemStage, prelude::{Commands, ResMut, Assets, Image, Res, Transform, Query, KeyCode, With, EventReader, MouseButton, App, Msaa, CoreStage, OrthographicCameraBundle}};
 use bevy_simple_tilemap::prelude::*;
-use glob1rs::legacy::{terrain, sprites, unit::{move_units, UnitPosition, MoveOrder, UnitSprites, UnitBundle}, direction::Direction, grid::Coord, over_map::OverMap};
+use glob1rs::legacy::{stored_map, sprites, unit::{move_units, UnitPosition, MoveOrder, UnitSprites, UnitBundle}, direction::Direction, over_map::OverMap};
 
 struct MapFileName(String);
 
@@ -56,8 +56,8 @@ fn setup(
     let (terrain_atlas_handle, terrain_handles) = build_atlas(192, 164);
     let map_file_name = &map_file_name.0;
     let file = File::open(map_file_name).expect("Cannot open map filename");
-    let map = terrain::load(file).expect("Error reading map");
-    let tiles: Vec<_> = map.0
+    let stored_map = stored_map::load(file).expect("Error reading map");
+    let tiles: Vec<_> = stored_map.terrain.0
         .iter()
         .enumerate()
         .flat_map(|(x, col)| {
@@ -75,7 +75,7 @@ fn setup(
         .collect();
     let mut tilemap = TileMap::default();
     tilemap.set_tiles(tiles);
-    commands.insert_resource(map);
+    commands.insert_resource(stored_map.terrain);
 
     // Show terrain
     let terrain_bundle = TileMapBundle {
@@ -88,22 +88,28 @@ fn setup(
     commands.spawn_bundle(camera);
     commands.spawn_bundle(terrain_bundle);
 
-    // Create one unit
-    commands.spawn().insert_bundle(UnitBundle {
-        position: UnitPosition {
-            position: Coord::new(0, 0),
-            step: 0,
-            direction: Direction::Right,
-            order: MoveOrder::Idle,
-            speed: 3,
-        },
-        sprite: SpriteSheetBundle {
-            sprite: TextureAtlasSprite::new(0),
-            texture_atlas: unit_atlas_handle,
-            transform: Transform::from_xyz(0., 0., 1.),
-            ..Default::default()
-        }
-    });
+    // Create units from queen positions
+    for position in stored_map.queen_positions {
+        commands.spawn().insert_bundle(UnitBundle {
+            position: UnitPosition {
+                position,
+                step: 0,
+                direction: Direction::Right,
+                order: MoveOrder::Idle,
+                speed: 3,
+            },
+            sprite: SpriteSheetBundle {
+                sprite: {
+                    let mut tas = TextureAtlasSprite::new(0);
+                    tas.color = bevy::prelude::Color::RED;
+                    tas
+                },
+                texture_atlas: unit_atlas_handle.clone(),
+                transform: Transform::from_xyz(0., 0., 1.),
+                ..Default::default()
+            }
+        });
+    }
 
     // Setup window title
     let window = windows.primary_mut();

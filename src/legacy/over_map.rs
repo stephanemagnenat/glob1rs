@@ -14,6 +14,7 @@ impl Default for OverMapTile {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OverMap(pub Box<[[OverMapTile; 1024]; 1024]>);
 impl Default for OverMap {
     fn default() -> Self {
