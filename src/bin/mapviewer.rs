@@ -17,6 +17,8 @@ fn setup(
     let glob1images = sprites::load();
     let mut build_atlas = |skip: usize, take: usize| {
         let mut atlas_builder = TextureAtlasBuilder::default();
+        // We have to collect because we need to finish the atlas before the next pass
+        #[allow(clippy::needless_collect)]
         let handles = glob1images
             .iter()
             .skip(skip)
@@ -27,7 +29,6 @@ fn setup(
                 atlas_builder.add_texture(handle.clone(), image);
                 handle
             })
-            // We have to collect because we need to finish the atlas before the next pass
             .collect::<Vec<_>>();
         let atlas = atlas_builder
             .finish(&mut images)

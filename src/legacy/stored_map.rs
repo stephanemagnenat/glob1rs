@@ -138,22 +138,20 @@ pub fn load(input: impl Read) -> Result<StoredMap, Error> {
     let mut get_u16_be = || {
         let b_high = get_u8();
         b_high.and_then(
-            |b_high| get_u8().and_then(|b_low| {
-                Ok((b_high as u16) << 8 | (b_low as u16))
+            |b_high| get_u8().map(|b_low| {
+                (b_high as u16) << 8 | (b_low as u16)
             })
         )
     };
     let mut get_coord = || {
         let x = get_u16_be();
         x.and_then(
-            |x| get_u16_be().and_then(|y|
-                Ok(
-                    if x != u16::MAX && y != u16::MAX {
-                        Some(Coord::new(x as i16, y as i16))
-                    } else {
-                        None
-                    }
-                )
+            |x| get_u16_be().map(|y|
+                if x != u16::MAX && y != u16::MAX {
+                    Some(Coord::new(x as i16, y as i16))
+                } else {
+                    None
+                }
             )
         )
     };

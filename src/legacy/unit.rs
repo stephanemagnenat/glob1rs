@@ -1,3 +1,6 @@
+// see: https://github.com/bevyengine/bevy/discussions/5166
+#![allow(clippy::forget_non_drop)]
+
 use bevy::{prelude::{Component, Query, ResMut, Entity, Handle, Image, Bundle, Res, Transform}, sprite::{TextureAtlas, SpriteSheetBundle, TextureAtlasSprite}};
 use rand::Rng;
 use rand::seq::IteratorRandom;
