@@ -7,9 +7,16 @@ struct ViewerState {
     images: Vec<Handle<Image>>,
 }
 
-fn update_title(state: &ViewerState, mut windows: ResMut<Windows>) {
+fn update_title(state: &ViewerState, images: Res<Assets<Image>>, mut windows: ResMut<Windows>) {
+    let selected_handle = state.images[state.current].clone();
+    let size = images.get(selected_handle).unwrap().size().as_uvec2();
     let window = windows.primary_mut();
-    window.set_title(format!("Image {} / {}", state.current, state.images.len()));
+    window.set_title(format!(
+        "Image {} / {} - {}",
+        state.current,
+        state.images.len(),
+        size
+    ));
 }
 
 fn setup(
@@ -25,14 +32,15 @@ fn setup(
         .collect::<Vec<_>>();
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(SpriteBundle {
-        texture: state.images[0].clone(),
+        texture: state.images[state.current].clone(),
         ..default()
     });
-    update_title(&state, windows);
+    update_title(&state, images.into(), windows);
 }
 
 fn keyboard_input(
     keys: Res<Input<KeyCode>>,
+    images: Res<Assets<Image>>,
     mut state: ResMut<ViewerState>,
     mut query: Query<&mut Handle<Image>>,
     windows: ResMut<Windows>,
@@ -55,7 +63,7 @@ fn keyboard_input(
         changed = true;
     }
     if changed {
-        update_title(&state, windows);
+        update_title(&state, images, windows);
         for mut handle in query.iter_mut() {
             *handle = state.images[state.current].clone();
         }

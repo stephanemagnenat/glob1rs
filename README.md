@@ -9,8 +9,8 @@ Some bits of [Globulation 1](https://stephane.magnenat.net/archives/globulation/
 
 Not so much so far, just some asset loading code and basic unit logic.
 
-## View a map
+## Run a map
 
 ```
-cargo run --bin mapviewer maps/varied.g1m
+cargo run --bin glob1 maps/varied.g1m
 ```

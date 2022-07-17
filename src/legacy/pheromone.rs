@@ -3,6 +3,23 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use super::grid::{Coord, Grid2D};
 
+/// A diffusion factor, in proportion/percentage
+pub struct DiffusionProportion(u16);
+impl DiffusionProportion {
+    pub fn from_percent(percent: i32) -> Self {
+        assert!(percent >= 0);
+        assert!(percent <= 100);
+        let value = (percent * 1024) / 100;
+        Self(value as u16)
+    }
+    pub fn from_probability(prob: f32) -> Self {
+        assert!(prob >= 0.0);
+        assert!(prob <= 1.0);
+        let value = prob * 1024.0;
+        Self(value as u16)
+    }
+}
+
 pub trait Dispersion: Grid2D<u16> {
     /// Evaporate by 1
     fn evaporate(&mut self) {

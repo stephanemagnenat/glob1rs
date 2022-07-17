@@ -1,4 +1,4 @@
-use log::{debug, trace};
+use log::{debug, error, trace};
 use rand::{prelude::ThreadRng, Rng};
 use std::io::{Error, ErrorKind, Read};
 
@@ -9,6 +9,15 @@ pub struct StoredMap {
     pub terrain: TerrainMap,
     pub queen_positions: Vec<Coord>,
     pub view_position: Coord,
+}
+impl std::fmt::Display for StoredMap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "{} queens, start view {:?}",
+            self.queen_positions.len(),
+            self.view_position
+        ))
+    }
 }
 
 /// When a tile is compressed, only its type (e.g. pure water) is stored.
@@ -36,6 +45,12 @@ pub fn load(input: impl Read) -> Result<StoredMap, Error> {
             .transpose()
             .and_then(|b| b.ok_or_else(|| Error::from(ErrorKind::UnexpectedEof)))
     };
+    // This allows to load the maps from the released game
+    /*let header = [get_u8()?, get_u8()?, get_u8()?, get_u8()?];
+    get_u8()?;
+    get_u8()?;
+    get_u8()?;*/
+
     let mut map = box_array![[0; 1024]; 1024];
     let mut rng = rand::thread_rng();
     let mut multi_tiles: Option<(u8, i32)> = None;
@@ -128,7 +143,10 @@ pub fn load(input: impl Read) -> Result<StoredMap, Error> {
                         multi_tiles = Some((encoded, count - 1));
                     }
                 }
-                _ => return Err(Error::from(ErrorKind::InvalidData)),
+                ty => {
+                    error!("Found unknown compression type {ty}");
+                    return Err(Error::from(ErrorKind::InvalidData));
+                }
             }
         }
     }

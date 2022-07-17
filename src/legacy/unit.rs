@@ -2,7 +2,8 @@
 #![allow(clippy::forget_non_drop)]
 
 use bevy::{
-    prelude::{Bundle, Component, Entity, Handle, Image, Query, Res, ResMut, Transform},
+    math::UVec2,
+    prelude::{Bundle, Commands, Component, Entity, Handle, Image, Query, Res, ResMut, Transform},
     sprite::{SpriteSheetBundle, TextureAtlas, TextureAtlasSprite},
 };
 use rand::seq::IteratorRandom;
@@ -10,7 +11,7 @@ use rand::Rng;
 
 use super::{
     direction::Direction,
-    grid::{Coord, Grid2D},
+    grid::{grid_to_world_with_delta, Coord, Grid2D},
     over_map::{OverMap, OverMapTile},
     terrain::{TerrainMap, TerrainType},
 };
@@ -18,7 +19,7 @@ use super::{
 #[derive(Default)]
 pub struct UnitSprites {
     pub texture_atlas: Handle<TextureAtlas>,
-    pub sprites: Vec<(Handle<Image>, usize)>,
+    pub sprites: Vec<((Handle<Image>, UVec2), usize)>,
 }
 
 #[derive(Debug)]
@@ -42,6 +43,42 @@ pub struct UnitBundle {
     pub position: UnitPosition,
     #[bundle]
     pub sprite: SpriteSheetBundle,
+}
+impl UnitBundle {
+    pub fn try_spawn(
+        position: Coord,
+        unit_sprites: &UnitSprites,
+        over_map: &mut OverMap,
+        commands: &mut Commands,
+    ) -> Option<Entity> {
+        if over_map.get(position) != OverMapTile::Empty {
+            return None;
+        }
+        let id = commands
+            .spawn()
+            .insert_bundle(UnitBundle {
+                position: UnitPosition {
+                    position,
+                    step: 0,
+                    direction: Direction::Right,
+                    order: MoveOrder::Idle,
+                    speed: 3,
+                },
+                sprite: SpriteSheetBundle {
+                    sprite: {
+                        let mut tas = TextureAtlasSprite::new(0);
+                        tas.color = bevy::prelude::Color::RED;
+                        tas
+                    },
+                    texture_atlas: unit_sprites.texture_atlas.clone(),
+                    transform: Transform::from_xyz(0., 0., 1.), //Transform::from_translation(grid_to_world(position)),
+                    ..Default::default()
+                },
+            })
+            .id();
+        over_map.set(position, OverMapTile::Unit(id));
+        Some(id)
+    }
 }
 
 pub fn valid_directions<'a>(
@@ -134,9 +171,7 @@ pub fn move_units(
                 64 + (dir_index << 3 | unit.step >> 5),
             ),
         };
-        let position = unit.position * 32 + delta_position;
-        transform.translation.x = position.x as f32;
-        transform.translation.y = -position.y as f32;
+        transform.translation = grid_to_world_with_delta(unit.position, delta_position);
         sprite.index = unit_sprites.sprites[index as usize].1;
         // next movement
         if movement_ended {

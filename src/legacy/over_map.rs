@@ -8,6 +8,7 @@ pub enum OverMapTile {
     #[default]
     Empty,
     Unit(Entity),
+    Building(Entity),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

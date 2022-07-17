@@ -4,6 +4,7 @@ mod array;
 pub mod direction;
 #[macro_use]
 pub mod grid;
+pub mod building;
 pub mod over_map;
 pub mod pheromone;
 pub mod sprites;

@@ -12,10 +12,6 @@ pub fn load() -> Vec<Image> {
     let mut n = 0;
     let mut images = Vec::new();
     while i < l {
-        // from Glob1 image viewer code, entry 465 seems invalid
-        if n == 465 {
-            break;
-        }
         if i + 8 > l {
             panic!("End of file before complete header!")
         }
@@ -27,17 +23,27 @@ pub fn load() -> Vec<Image> {
         let y_extra = get_usize(&mut i);
         let x_extra = get_usize(&mut i);
         let h = get_usize(&mut i);
-        let w = get_usize(&mut i);
-        debug!("Loading sprite {n}: is {w} x {h} ({x_extra}, {y_extra})");
+        let mut w = get_usize(&mut i);
+        let last_col_pad = if w & 0x1 == 1 {
+            w += 1;
+            true
+        } else {
+            false
+        };
+        debug!(
+            "Loading sprite {n}: is {w} x {h} ({x_extra}, {y_extra}){}",
+            if last_col_pad { " (padding)" } else { "" }
+        );
         let pixel_count = w as usize * h as usize;
         let mut data = Vec::with_capacity(pixel_count * 4);
         // terrain doesn't have transparency
         let has_transparency = !(192..=355).contains(&n);
         for _y in 0..h {
-            for _x in 0..w {
+            for x in 0..w {
                 let entry_id = bytes[i] as usize;
+                let ignore_pixel = x + 1 == w && last_col_pad;
                 // assuming entry 0 is transparent
-                if has_transparency && entry_id == 0 {
+                if ignore_pixel || has_transparency && entry_id == 0 {
                     data.push(0);
                     data.push(0);
                     data.push(0);

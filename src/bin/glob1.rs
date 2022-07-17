@@ -7,23 +7,25 @@ use bevy::{
         mouse::{MouseMotion, MouseWheel},
         Input,
     },
-    math::{IVec3, Vec3},
+    math::{IVec3, UVec2, Vec3},
     prelude::{
-        App, Assets, Commands, CoreStage, EventReader, Image, KeyCode, MouseButton, Msaa,
+        App, Assets, Commands, CoreStage, EventReader, Handle, Image, KeyCode, MouseButton, Msaa,
         OrthographicCameraBundle, Query, Res, ResMut, Transform, With,
     },
     render::camera::{ActiveCamera, Camera2d},
-    sprite::{SpriteSheetBundle, TextureAtlas, TextureAtlasBuilder, TextureAtlasSprite},
+    sprite::{TextureAtlas, TextureAtlasBuilder},
+    text::Text,
     window::Windows,
     DefaultPlugins,
 };
 use bevy_simple_tilemap::prelude::*;
 use glob1rs::legacy::{
-    direction::Direction,
+    building::{BuildingSprites, BuildingType},
     over_map::OverMap,
     sprites, stored_map,
-    unit::{move_units, MoveOrder, UnitBundle, UnitPosition, UnitSprites},
+    unit::{move_units, UnitBundle, UnitSprites},
 };
+use log::info;
 
 struct MapFileName(String);
 
@@ -31,31 +33,31 @@ fn setup(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut over_map: ResMut<OverMap>,
     mut windows: ResMut<Windows>,
     map_file_name: Res<MapFileName>,
 ) {
     // Load all images and provide support to create atlases
     let glob1images = sprites::load();
-    let mut build_atlas = |skip: usize, take: usize| {
+    // Helper closure to assemble ranges of images into an atlas
+    let mut build_atlas = |skip_and_takes: Vec<(usize, usize)>| {
         let mut atlas_builder = TextureAtlasBuilder::default();
         // We have to collect because we need to finish the atlas before the next pass
-        #[allow(clippy::needless_collect)]
-        let handles = glob1images
-            .iter()
-            .skip(skip)
-            .take(take)
-            .map(|image| {
+        let mut handles = Vec::new();
+        for (skip, take) in skip_and_takes {
+            handles.extend(glob1images.iter().skip(skip).take(take).map(|image| {
                 let handle = images.add(image.clone());
                 let image = images.get(handle.clone()).unwrap();
+                let size = image.size().as_uvec2();
                 atlas_builder.add_texture(handle.clone(), image);
-                handle
-            })
-            .collect::<Vec<_>>();
+                (handle, size)
+            }));
+        }
         let atlas = atlas_builder.finish(&mut images).unwrap();
         let handles_and_index = handles
             .into_iter()
             .map(|handle| {
-                let index = atlas.get_texture_index(&handle).unwrap();
+                let index = atlas.get_texture_index(&handle.0).unwrap();
                 (handle, index)
             })
             .collect::<Vec<_>>();
@@ -63,18 +65,26 @@ fn setup(
         (atlas_handle, handles_and_index)
     };
 
-    // Build unit atlas and handles
-    let (unit_atlas_handle, unit_sprites) = build_atlas(0, 192);
-    commands.insert_resource(UnitSprites {
-        texture_atlas: unit_atlas_handle.clone(),
-        sprites: unit_sprites,
+    // Build building atlas and handles
+    let (building_atlas_handle, building_sprites) = build_atlas(BuildingType::image_ranges());
+    commands.insert_resource(BuildingSprites {
+        texture_atlas: building_atlas_handle,
+        sprites: building_sprites,
     });
 
+    // Build unit atlas and handles
+    let (unit_atlas_handle, unit_sprites) = build_atlas(vec![(0, 192)]);
+    let unit_sprites = UnitSprites {
+        texture_atlas: unit_atlas_handle,
+        sprites: unit_sprites,
+    };
+
     // Create a new tilemap for terrain
-    let (terrain_atlas_handle, terrain_handles) = build_atlas(192, 164);
+    let (terrain_atlas_handle, terrain_handles) = build_atlas(vec![(192, 164)]);
     let map_file_name = &map_file_name.0;
     let file = File::open(map_file_name).expect("Cannot open map filename");
     let stored_map = stored_map::load(file).expect("Error reading map");
+    println!("Loaded map: {stored_map}");
     let tiles: Vec<_> = stored_map
         .terrain
         .0
@@ -111,26 +121,11 @@ fn setup(
 
     // Create units from queen positions
     for position in stored_map.queen_positions {
-        commands.spawn().insert_bundle(UnitBundle {
-            position: UnitPosition {
-                position,
-                step: 0,
-                direction: Direction::Right,
-                order: MoveOrder::Idle,
-                speed: 3,
-            },
-            sprite: SpriteSheetBundle {
-                sprite: {
-                    let mut tas = TextureAtlasSprite::new(0);
-                    tas.color = bevy::prelude::Color::RED;
-                    tas
-                },
-                texture_atlas: unit_atlas_handle.clone(),
-                transform: Transform::from_xyz(0., 0., 1.),
-                ..Default::default()
-            },
-        });
+        UnitBundle::try_spawn(position, &unit_sprites, &mut over_map, &mut commands).unwrap();
     }
+
+    // add the resources
+    commands.insert_resource(unit_sprites);
 
     // Setup window title
     let window = windows.primary_mut();
