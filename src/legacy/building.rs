@@ -85,7 +85,7 @@ pub enum BuildingType {
     ConstructionSite(ConstructionSiteType),
 }
 impl BuildingType {
-	/// Ranges of related images in all images
+    /// Ranges of related images in all images
     pub fn image_ranges() -> Vec<(usize, usize)> {
         vec![
             (370, 49), // normal buildings
@@ -93,7 +93,7 @@ impl BuildingType {
             (492, 6),  // various size construction sites
         ]
     }
-	/// The index of the corresponding image in BuildingSprites
+    /// The index of the corresponding image in BuildingSprites
     pub fn image_index(&self) -> usize {
         match *self {
             BuildingType::Hive => 0,

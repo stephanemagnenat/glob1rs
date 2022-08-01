@@ -1,7 +1,6 @@
 use std::fs::File;
 
 use bevy::{
-    core::{FixedTimestep, Time},
     ecs::schedule::SystemStage,
     input::{
         mouse::{MouseMotion, MouseWheel},
@@ -9,12 +8,12 @@ use bevy::{
     },
     math::{IVec3, UVec2, Vec3},
     prelude::{
-        App, Assets, Commands, CoreStage, EventReader, Handle, Image, KeyCode, MouseButton, Msaa,
-        OrthographicCameraBundle, Query, Res, ResMut, Transform, With,
+        App, Assets, Camera2d, Camera2dBundle, Commands, CoreStage, EventReader, Handle, Image,
+        KeyCode, MouseButton, Msaa, Query, Res, ResMut, Transform, With,
     },
-    render::camera::{ActiveCamera, Camera2d},
     sprite::{TextureAtlas, TextureAtlasBuilder},
     text::Text,
+    time::{FixedTimestep, Time},
     window::Windows,
     DefaultPlugins,
 };
@@ -47,7 +46,7 @@ fn setup(
         for (skip, take) in skip_and_takes {
             handles.extend(glob1images.iter().skip(skip).take(take).map(|image| {
                 let handle = images.add(image.clone());
-                let image = images.get(handle.clone()).unwrap();
+                let image = images.get(&handle).unwrap();
                 let size = image.size().as_uvec2();
                 atlas_builder.add_texture(handle.clone(), image);
                 (handle, size)
@@ -114,7 +113,7 @@ fn setup(
         texture_atlas: terrain_atlas_handle,
         ..Default::default()
     };
-    let mut camera = OrthographicCameraBundle::new_2d();
+    let mut camera = Camera2dBundle::default();
     camera.transform.translation = Vec3::new(512.0 * 32.0, -512.0 * 32.0, 10.0);
     commands.spawn_bundle(camera);
     commands.spawn_bundle(terrain_bundle);
@@ -134,7 +133,6 @@ fn setup(
 
 // Inspired by: https://github.com/forbjok/bevy_simple_tilemap/blob/master/examples/simple.rs
 fn input_system(
-    active_camera: Res<ActiveCamera<Camera2d>>,
     mut camera_transform_query: Query<(&mut Transform,), With<Camera2d>>,
     // mut tilemap_visible_query: Query<&mut Visibility, With<TileMap>>,
     keyboard_input: Res<Input<KeyCode>>,
@@ -143,48 +141,46 @@ fn input_system(
     buttons: Res<Input<MouseButton>>,
     time: Res<Time>,
 ) {
-    if let Some(active_camera_entity) = active_camera.get() {
-        if let Ok((mut tf,)) = camera_transform_query.get_mut(active_camera_entity) {
-            let move_speed = 1000.0 * tf.scale.x;
-            let zoom_speed = 5.0 * tf.scale.x;
+    for (mut tf,) in camera_transform_query.iter_mut() {
+        let move_speed = 1000.0 * tf.scale.x;
+        let zoom_speed = 5.0 * tf.scale.x;
 
-            if keyboard_input.pressed(KeyCode::PageUp) {
-                let amount = zoom_speed * time.delta_seconds();
-                tf.scale.x = (tf.scale.x - amount).max(0.1);
-                tf.scale.y = (tf.scale.y - amount).max(0.1);
-            } else if keyboard_input.pressed(KeyCode::PageDown) {
-                let amount = zoom_speed * time.delta_seconds();
-                tf.scale.x += amount;
-                tf.scale.y += amount;
-            }
+        if keyboard_input.pressed(KeyCode::PageUp) {
+            let amount = zoom_speed * time.delta_seconds();
+            tf.scale.x = (tf.scale.x - amount).max(0.1);
+            tf.scale.y = (tf.scale.y - amount).max(0.1);
+        } else if keyboard_input.pressed(KeyCode::PageDown) {
+            let amount = zoom_speed * time.delta_seconds();
+            tf.scale.x += amount;
+            tf.scale.y += amount;
+        }
 
-            if keyboard_input.pressed(KeyCode::Left) {
-                tf.translation.x -= move_speed * time.delta_seconds();
-            } else if keyboard_input.pressed(KeyCode::Right) {
-                tf.translation.x += move_speed * time.delta_seconds();
-            }
+        if keyboard_input.pressed(KeyCode::Left) {
+            tf.translation.x -= move_speed * time.delta_seconds();
+        } else if keyboard_input.pressed(KeyCode::Right) {
+            tf.translation.x += move_speed * time.delta_seconds();
+        }
 
-            if keyboard_input.pressed(KeyCode::Down) {
-                tf.translation.y -= move_speed * time.delta_seconds();
-            } else if keyboard_input.pressed(KeyCode::Up) {
-                tf.translation.y += move_speed * time.delta_seconds();
-            }
+        if keyboard_input.pressed(KeyCode::Down) {
+            tf.translation.y -= move_speed * time.delta_seconds();
+        } else if keyboard_input.pressed(KeyCode::Up) {
+            tf.translation.y += move_speed * time.delta_seconds();
+        }
 
-            use bevy::input::mouse::MouseScrollUnit;
-            for ev in scroll_evr.iter() {
-                let factor = match ev.unit {
-                    MouseScrollUnit::Line => ev.y * 12.0,
-                    MouseScrollUnit::Pixel => ev.y,
-                };
-                let amount = -zoom_speed * factor * 0.002;
-                tf.scale.x = (tf.scale.x + amount).max(0.1);
-                tf.scale.y = (tf.scale.y + amount).max(0.1);
-            }
-            if buttons.pressed(MouseButton::Middle) {
-                for ev in motion_evr.iter() {
-                    tf.translation.x -= ev.delta.x * tf.scale.x;
-                    tf.translation.y += ev.delta.y * tf.scale.y;
-                }
+        use bevy::input::mouse::MouseScrollUnit;
+        for ev in scroll_evr.iter() {
+            let factor = match ev.unit {
+                MouseScrollUnit::Line => ev.y * 12.0,
+                MouseScrollUnit::Pixel => ev.y,
+            };
+            let amount = -zoom_speed * factor * 0.002;
+            tf.scale.x = (tf.scale.x + amount).max(0.1);
+            tf.scale.y = (tf.scale.y + amount).max(0.1);
+        }
+        if buttons.pressed(MouseButton::Middle) {
+            for ev in motion_evr.iter() {
+                tf.translation.x -= ev.delta.x * tf.scale.x;
+                tf.translation.y += ev.delta.y * tf.scale.y;
             }
         }
     }

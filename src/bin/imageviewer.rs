@@ -9,7 +9,7 @@ struct ViewerState {
 
 fn update_title(state: &ViewerState, images: Res<Assets<Image>>, mut windows: ResMut<Windows>) {
     let selected_handle = state.images[state.current].clone();
-    let size = images.get(selected_handle).unwrap().size().as_uvec2();
+    let size = images.get(&selected_handle).unwrap().size().as_uvec2();
     let window = windows.primary_mut();
     window.set_title(format!(
         "Image {} / {} - {}",
@@ -30,7 +30,7 @@ fn setup(
         .into_iter()
         .map(|image| images.add(image))
         .collect::<Vec<_>>();
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(Camera2dBundle::default());
     commands.spawn_bundle(SpriteBundle {
         texture: state.images[state.current].clone(),
         ..default()
